@@ -16,7 +16,7 @@ public class AIController {
     }
 
     @GetMapping("/ask")
-    public ChatResponse hello(@RequestParam String userMessage) {
+    public ChatResponse ask(@RequestParam String userMessage) {
         return openAIChatClient.prompt()
                 .user(userMessage)
                 .call()
