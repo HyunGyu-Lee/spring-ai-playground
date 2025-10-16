@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Spring AI ChatResponse Viewer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <style>
+        /* 스크롤바 최소 커스터마이즈 (선택) */
+        .thin-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .thin-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+<div class="mx-auto max-w-7xl p-4 md:p-8">
+    <!-- 헤더 -->
+    <header class="mb-6 flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m9 0a9 9 0 10-3.17 6.86L22 22z"/></svg>
+        </div>
+        <div>
+            <h1 class="text-xl font-semibold">Spring AI ChatResponse Viewer</h1>
+            <p class="text-sm text-slate-500">제공된 ChatResponse(JSON)를 렌더링하고, Model / RateLimit / Usage를 확인합니다.</p>
+        </div>
+    </header>
+
+    <!-- 7:3 레이아웃 -->
+    <div class="grid grid-cols-10 gap-6">
+        <!-- 메인(7) -->
+        <main class="col-span-10 lg:col-span-7">
+            <!-- 응답 출력 카드 -->
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm h-[540px] overflow-y-auto">
+                <div class="mb-3 flex items-center gap-2">
+                <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">
+                  A
+                </span>
+                    <h2 class="text-base font-semibold">AI 응답</h2>
+                </div>
+                <article id="assistantText" class="prose prose-slate max-w-none whitespace-pre-wrap text-[15px] leading-7">
+                    <!-- 텍스트 렌더링 -->
+                </article>
+            </section>
+
+            <!-- 입력 영역 -->
+            <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div class="flex items-start gap-3">
+            <textarea
+                    id="userInput"
+                    class="thin-scrollbar min-h-[96px] w-full resize-y rounded-xl border border-slate-300 bg-slate-50 p-3 outline-none ring-0 focus:border-slate-400"
+                    placeholder="질문을 입력하세요..."
+            ></textarea>
+                    <button
+                            id="sendBtn"
+                            class="shrink-0 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                            title="질문 전송"
+                    >
+                        전송
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- 사이드(3) -->
+        <aside class="col-span-10 lg:col-span-3">
+            <!-- 모델 카드 -->
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-3 flex items-center gap-2">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">M</span>
+                    <h3 class="text-base font-semibold">모델 정보</h3>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Model</span>
+                        <span id="modelName" class="font-medium">-</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-500">Response ID</span>
+                        <span id="responseId" class="truncate text-right text-slate-900" title=""></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RateLimit 카드 -->
+            <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-3 flex items-center gap-2">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">R</span>
+                    <h3 class="text-base font-semibold">RateLimit</h3>
+                </div>
+
+                <div class="mb-4">
+                    <div class="mb-1 flex items-center justify-between text-sm">
+                        <span class="text-slate-500">Requests</span>
+                        <span id="requestsStat" class="font-medium">-</span>
+                    </div>
+                    <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div id="requestsBar" class="h-full rounded-full bg-slate-900" style="width:0"></div>
+                    </div>
+                    <p id="requestsReset" class="mt-1 text-xs text-slate-400"></p>
+                </div>
+
+                <div>
+                    <div class="mb-1 flex items-center justify-between text-sm">
+                        <span class="text-slate-500">Tokens</span>
+                        <span id="tokensStat" class="font-medium">-</span>
+                    </div>
+                    <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                        <div id="tokensBar" class="h-full rounded-full bg-slate-900" style="width:0"></div>
+                    </div>
+                    <p id="tokensReset" class="mt-1 text-xs text-slate-400"></p>
+                </div>
+            </section>
+
+            <!-- Usage 카드 -->
+            <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div class="mb-3 flex items-center gap-2">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">U</span>
+                    <h3 class="text-base font-semibold">Usage</h3>
+                </div>
+                <div class="text-sm">
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-slate-500">promptTokens</span>
+                        <span id="promptTokens" class="font-medium">-</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-slate-500">completionTokens</span>
+                        <span id="completionTokens" class="font-medium">-</span>
+                    </div>
+                    <div class="flex items-center justify-between py-1">
+                        <span class="text-slate-500">totalTokens</span>
+                        <span id="totalTokens" class="font-medium">-</span>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        // 전송 버튼: 서버로 질문 전송 후 응답(JSON) 받아 updateUI 호출
+        $("#sendBtn").on("click", async function () {
+            const $button = $(this);
+            const $input = $("#userInput");
+            const userMessage = ($input.val() || "").toString().trim();
+            if (!userMessage) return;
+
+            $button.prop("disabled", true);
+            const previousLabel = $button.text();
+            $button.text("전송 중...");
+
+            try {
+                const responseJson = await callApi(userMessage); // /ask?userMessage=...
+                updateUI(responseJson);
+                $input.val("");
+            } catch (error) {
+                // 실패 시 간단한 오류 메시지를 본문에 표시
+                updateUI({
+                    result: {
+                        output: {
+                            messageType: "ASSISTANT",
+                            text:
+                                "근거가 부족합니다: 응답을 불러올 수 없습니다.\n\n확실하지 않음: " +
+                                ((error && error.message) || "알 수 없는 오류"),
+                        },
+                    },
+                    metadata: {},
+                });
+            } finally {
+                $button.text(previousLabel);
+                $button.prop("disabled", false);
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
