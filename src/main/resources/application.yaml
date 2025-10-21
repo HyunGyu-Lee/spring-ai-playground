@@ -3,8 +3,20 @@ spring:
     name: spring-ai-playground
   ai:
     openai:
-      api-key: ${OPENAI_API_KEY}
+      api-key: ${OPENAI_API_KEY:}
       chat:
         options:
           model: gpt-5-nano
           temperature: 1 # gpt5 temperature ???? ??
+      embedding:
+        options:
+          model: text-embedding-3-small
+    vectorstore:
+      qdrant:
+        host: localhost
+        port: 6334
+        collection-name: spring-ai-playground
+
+logging:
+  level:
+    org.springframework.ai: DEBUG
