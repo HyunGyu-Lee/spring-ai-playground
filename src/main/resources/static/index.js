@@ -17,9 +17,9 @@ function percentage(numerator, denominator) {
     return Math.max(0, Math.min(100, value));
 }
 
-// API 호출: /ask?userMessage=...
+// API 호출: /chat?userMessage=...
 async function callApi(userMessage) {
-    const url = `/ask?userMessage=${encodeURIComponent(userMessage)}`;
+    const url = `/chat?userMessage=${encodeURIComponent(userMessage)}`;
     const response = await fetch(url, { method: "GET" });
 
     if (!response.ok) {

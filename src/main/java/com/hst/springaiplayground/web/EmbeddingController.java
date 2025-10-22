@@ -1,34 +1,22 @@
 package com.hst.springaiplayground.web;
 
 import com.hst.springaiplayground.rag.Knowledge;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
+import com.hst.springaiplayground.service.EmbeddingService;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
-public class AIController {
-    private final ChatClient openAIChatClient;
-    private final VectorStore vectorStore;
+@RequestMapping("/embedding")
+public class EmbeddingController {
+    private final EmbeddingService embeddingService;
 
-    public AIController(ChatClient openAIChatClient, VectorStore vectorStore) {
-        this.openAIChatClient = openAIChatClient;
-        this.vectorStore = vectorStore;
-    }
-
-    @GetMapping("/ask")
-    public ChatResponse ask(@RequestParam String userMessage) {
-        return openAIChatClient.prompt()
-                .user(userMessage)
-                .call()
-                .chatResponse();
+    public EmbeddingController(EmbeddingService embeddingService) {
+        this.embeddingService = embeddingService;
     }
 
     @GetMapping("/training")
@@ -43,21 +31,15 @@ public class AIController {
         List<Document> documents = originData.stream()
                 .map(knowledge -> {
                     String content = String.format("title=%s\n description=%s", knowledge.question(), knowledge.answer());
-                    return new Document(content, Map.of("id", knowledge.id(), "question", knowledge.question(), "answer", knowledge.answer()));
+                    return new Document(content, knowledge.toMetadata());
                 })
                 .toList();
-
-        vectorStore.add(documents);
+        embeddingService.addDocuments(documents);
     }
 
     @GetMapping("/search")
-    public List<String> search(@RequestParam String query) {
-        SearchRequest searchRequest = SearchRequest.builder()
-                .query(query)
-                .topK(2)
-                .similarityThresholdAll()
-                .build();
-        return vectorStore.similaritySearch(searchRequest).stream().map(Document::getFormattedContent).toList();
+    public List<String> search(@RequestParam String query, @RequestParam(required = false, defaultValue = "3") int topK) {
+        return embeddingService.searchDocuments(query, topK);
     }
 
 }
