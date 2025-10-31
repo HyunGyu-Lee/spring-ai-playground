@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Spring AI Platform</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="index.js"></script>
+    <style>
+        /* 스크롤바 최소 커스터마이즈 (선택) */
+        .thin-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+        .thin-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        /* 탭 애니메이션 */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* 텍스트 truncate */
+        .truncate-text {
+            display: inline-block;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+        /* 모달 스타일 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.2s;
+        }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content {
+            background-color: white;
+            border-radius: 1rem;
+            max-width: 80%;
+            max-height: 80%;
+            overflow: auto;
+            animation: slideUp 0.3s;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+<div class="mx-auto max-w-7xl p-4 md:p-8">
+    <!-- 헤더 -->
+    <header class="mb-6 flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8M8 14h5m9 0a9 9 0 10-3.17 6.86L22 22z"/></svg>
+        </div>
+        <div>
+            <h1 class="text-xl font-semibold">Spring AI Platform</h1>
+            <p class="text-sm text-slate-500">Chat, Embedding 및 Vector DB 관리 통합 플랫폼</p>
+        </div>
+    </header>
+
+    <!-- 탭 네비게이션 -->
+    <nav class="mb-6">
+        <div class="flex border-b border-slate-200">
+            <button data-tab="chat" class="tab-button px-6 py-3 text-sm font-medium text-slate-900 border-b-2 border-slate-900 transition-colors">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    Chat
+                </div>
+            </button>
+            <button data-tab="embedding" class="tab-button px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-700 border-b-2 border-transparent transition-colors">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                    Embedding
+                </div>
+            </button>
+            <button disabled class="tab-button px-6 py-3 text-sm font-medium text-slate-400 cursor-not-allowed border-b-2 border-transparent">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    추가 예정
+                </div>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Chat 탭 콘텐츠 -->
+    <div id="chat-tab" class="tab-content active">
+        <!-- 7:3 레이아웃 -->
+        <div class="grid grid-cols-10 gap-6">
+            <!-- 메인(7) -->
+            <main class="col-span-10 lg:col-span-7">
+                <!-- 응답 출력 카드 -->
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm h-[540px] overflow-y-auto">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">A</span>
+                        <h2 class="text-base font-semibold">AI 응답</h2>
+                    </div>
+                    <article id="assistantText" class="prose prose-slate max-w-none whitespace-pre-wrap text-[15px] leading-7">
+                        <!-- 텍스트 렌더링 -->
+                    </article>
+                </section>
+
+                <!-- 입력 영역 -->
+                <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <textarea
+                                id="userInput"
+                                class="thin-scrollbar min-h-[96px] w-full resize-y rounded-xl border border-slate-300 bg-slate-50 p-3 outline-none ring-0 focus:border-slate-400"
+                                placeholder="질문을 입력하세요..."
+                        ></textarea>
+                        <button
+                                id="sendBtn"
+                                class="shrink-0 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                                title="질문 전송"
+                        >
+                            전송
+                        </button>
+                    </div>
+                </section>
+            </main>
+
+            <!-- 사이드(3) -->
+            <aside class="col-span-10 lg:col-span-3">
+                <!-- 모델 카드 -->
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">M</span>
+                        <h3 class="text-base font-semibold">모델 정보</h3>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">Model</span>
+                            <span id="modelName" class="font-medium">-</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-500">Response ID</span>
+                            <span id="responseId" class="truncate text-right text-slate-900" title=""></span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RateLimit 카드 -->
+                <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">R</span>
+                        <h3 class="text-base font-semibold">RateLimit</h3>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="mb-1 flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Requests</span>
+                            <span id="requestsStat" class="font-medium">-</span>
+                        </div>
+                        <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div id="requestsBar" class="h-full rounded-full bg-slate-900" style="width:0"></div>
+                        </div>
+                        <p id="requestsReset" class="mt-1 text-xs text-slate-400"></p>
+                    </div>
+
+                    <div>
+                        <div class="mb-1 flex items-center justify-between text-sm">
+                            <span class="text-slate-500">Tokens</span>
+                            <span id="tokensStat" class="font-medium">-</span>
+                        </div>
+                        <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                            <div id="tokensBar" class="h-full rounded-full bg-slate-900" style="width:0"></div>
+                        </div>
+                        <p id="tokensReset" class="mt-1 text-xs text-slate-400"></p>
+                    </div>
+                </section>
+
+                <!-- Usage 카드 -->
+                <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">U</span>
+                        <h3 class="text-base font-semibold">Usage</h3>
+                    </div>
+                    <div class="text-sm">
+                        <div class="flex items-center justify-between py-1">
+                            <span class="text-slate-500">promptTokens</span>
+                            <span id="promptTokens" class="font-medium">-</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1">
+                            <span class="text-slate-500">completionTokens</span>
+                            <span id="completionTokens" class="font-medium">-</span>
+                        </div>
+                        <div class="flex items-center justify-between py-1">
+                            <span class="text-slate-500">totalTokens</span>
+                            <span id="totalTokens" class="font-medium">-</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Embedding 탭 콘텐츠 -->
+    <div id="embedding-tab" class="tab-content">
+        <div class="grid grid-cols-10 gap-6">
+            <!-- 메인 영역 -->
+            <main class="col-span-10 lg:col-span-7">
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                        </span>
+                        <h2 class="text-base font-semibold">Vector DB 관리</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="rounded-lg bg-slate-50 p-4">
+                            <h3 class="font-medium text-slate-900 mb-2">Embedding 기능 (개발 예정)</h3>
+                            <p class="text-sm text-slate-600">
+                                이 섹션에서는 문서를 벡터로 변환하고 Vector DB에 저장/검색하는 기능을 제공할 예정입니다.
+                            </p>
+                            <ul class="mt-3 text-sm text-slate-600 space-y-1">
+                                <li>• 문서 업로드 및 벡터 변환</li>
+                                <li>• Vector DB 저장 및 관리</li>
+                                <li>• 유사도 기반 검색</li>
+                                <li>• 벡터 차원 및 모델 설정</li>
+                            </ul>
+                        </div>
+
+                        <!-- 샘플 업로드 영역 -->
+                        <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            <p class="mt-2 text-sm text-slate-600">파일을 드래그하거나 클릭하여 업로드</p>
+                            <p class="mt-1 text-xs text-slate-500">PDF, TXT, DOCX 지원 예정</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 임베딩된 Documents 테이블 -->
+                <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                            </span>
+                            <h2 class="text-base font-semibold">저장된 Documents</h2>
+                        </div>
+                        <button id="refreshDocsBtn" class="px-3 py-1 text-sm font-medium text-slate-700 hover:text-slate-900 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                            <tr class="border-b border-slate-200">
+                                <th class="px-3 py-2 text-left font-medium text-slate-700">ID</th>
+                                <th class="px-3 py-2 text-left font-medium text-slate-700">Vector</th>
+                                <th class="px-3 py-2 text-left font-medium text-slate-700">Content</th>
+                                <th class="px-3 py-2 text-left font-medium text-slate-700">Metadata</th>
+                                <th class="px-3 py-2 text-center font-medium text-slate-700">Actions</th>
+                            </tr>
+                            </thead>
+                            <tbody id="documentsTableBody">
+                            <!-- 샘플 데이터 (실제로는 동적으로 생성됨) -->
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
+                                <td class="px-3 py-3 text-slate-900 font-mono text-xs">doc_001</td>
+                                <td class="px-3 py-3 text-slate-600 font-mono text-xs">
+                                    <span class="truncate-text">[0.1234, 0.5678, 0.9012...]</span>
+                                </td>
+                                <td class="px-3 py-3 text-slate-600">
+                                    <span class="truncate-text">Spring AI는 AI 애플리케이션 개발을 위한...</span>
+                                </td>
+                                <td class="px-3 py-3 text-slate-600 font-mono text-xs">
+                                    <span class="truncate-text">{"source": "manual", "type": "tutorial"...}</span>
+                                </td>
+                                <td class="px-3 py-3 text-center">
+                                    <button class="view-doc-btn text-slate-600 hover:text-slate-900" data-doc-id="doc_001">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-slate-100 hover:bg-slate-50 cursor-pointer">
+                                <td class="px-3 py-3 text-slate-900 font-mono text-xs">doc_002</td>
+                                <td class="px-3 py-3 text-slate-600 font-mono text-xs">
+                                    <span class="truncate-text">[0.2468, 0.1357, 0.8024...]</span>
+                                </td>
+                                <td class="px-3 py-3 text-slate-600">
+                                    <span class="truncate-text">Vector Database는 고차원 벡터 데이터를...</span>
+                                </td>
+                                <td class="px-3 py-3 text-slate-600 font-mono text-xs">
+                                    <span class="truncate-text">{"source": "documentation", "version": "1.0"...}</span>
+                                </td>
+                                <td class="px-3 py-3 text-center">
+                                    <button class="view-doc-btn text-slate-600 hover:text-slate-900" data-doc-id="doc_002">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div id="noDocumentsMessage" class="hidden py-8 text-center text-sm text-slate-500">
+                            저장된 Document가 없습니다.
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- 사이드 영역 -->
+            <aside class="col-span-10 lg:col-span-3">
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">S</span>
+                        <h3 class="text-base font-semibold">설정</h3>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Embedding Model</label>
+                            <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                <option>text-embedding-ada-002</option>
+                                <option>text-embedding-3-small</option>
+                                <option>text-embedding-3-large</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Vector DB</label>
+                            <select class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                                <option>Qdrant</option>
+                            </select>
+                        </div>
+                        <button class="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white opacity-50 cursor-not-allowed" disabled>
+                            설정 저장
+                        </button>
+                    </div>
+                </section>
+
+                <section class="mt-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div class="mb-3 flex items-center gap-2">
+                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-900 text-white">I</span>
+                        <h3 class="text-base font-semibold">정보</h3>
+                    </div>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">저장된 벡터</span>
+                            <span class="font-medium">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">총 문서</span>
+                            <span class="font-medium">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">DB 크기</span>
+                            <span class="font-medium">0 MB</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </div>
+</div>
+
+<!-- Document 상세보기 모달 -->
+<div id="documentModal" class="modal">
+    <div class="modal-content p-6 thin-scrollbar">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-slate-900">Document 상세정보</h3>
+            <button id="closeModal" class="text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">ID</label>
+                <div id="modalDocId" class="px-3 py-2 bg-slate-50 rounded-lg font-mono text-sm"></div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Vector</label>
+                <div id="modalDocVector" class="px-3 py-2 bg-slate-50 rounded-lg font-mono text-xs max-h-32 overflow-y-auto thin-scrollbar"></div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Content</label>
+                <div id="modalDocContent" class="px-3 py-2 bg-slate-50 rounded-lg text-sm max-h-48 overflow-y-auto thin-scrollbar whitespace-pre-wrap"></div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Metadata</label>
+                <pre id="modalDocMetadata" class="px-3 py-2 bg-slate-50 rounded-lg font-mono text-xs max-h-32 overflow-y-auto thin-scrollbar"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        // 탭 전환 로직
+        $('.tab-button').on('click', function() {
+            const $button = $(this);
+
+            // disabled 버튼은 클릭 불가
+            if ($button.prop('disabled')) return;
+
+            const targetTab = $button.data('tab');
+
+            // 모든 탭 버튼 비활성화 스타일
+            $('.tab-button').removeClass('text-slate-900 border-slate-900').addClass('text-slate-500 border-transparent');
+
+            // 클릭한 탭 버튼 활성화 스타일
+            $button.removeClass('text-slate-500 border-transparent').addClass('text-slate-900 border-slate-900');
+
+            // 모든 탭 콘텐츠 숨김
+            $('.tab-content').removeClass('active');
+
+            // 해당 탭 콘텐츠 표시
+            $(`#${targetTab}-tab`).addClass('active');
+        });
+
+        // Chat 탭 - 전송 버튼: 서버로 질문 전송 후 응답(JSON) 받아 updateUI 호출
+        $("#sendBtn").on("click", async function () {
+            const $button = $(this);
+            const $input = $("#userInput");
+            const userMessage = ($input.val() || "").toString().trim();
+            if (!userMessage) return;
+
+            $button.prop("disabled", true);
+            const previousLabel = $button.text();
+            $button.text("전송 중...");
+
+            try {
+                const responseJson = await callApi(userMessage); // /ask?userMessage=...
+                updateUI(responseJson);
+                $input.val("");
+            } catch (error) {
+                // 실패 시 간단한 오류 메시지를 본문에 표시
+                updateUI({
+                    result: {
+                        output: {
+                            messageType: "ASSISTANT",
+                            text:
+                                "근거가 부족합니다: 응답을 불러올 수 없습니다.\n\n확실하지 않음: " +
+                                ((error && error.message) || "알 수 없는 오류"),
+                        },
+                    },
+                    metadata: {},
+                });
+            } finally {
+                $button.text(previousLabel);
+                $button.prop("disabled", false);
+            }
+        });
+
+        // Embedding 탭 - Documents 테이블 새로고침
+        $("#refreshDocsBtn").on("click", async function() {
+            await loadDocuments();
+        });
+
+        // Document 상세보기 버튼 클릭
+        $(document).on('click', '.view-doc-btn', function(e) {
+            e.stopPropagation();
+            const docId = $(this).data('doc-id');
+
+            // 실제로는 서버에서 데이터를 가져와야 하지만, 여기서는 샘플 데이터 사용
+            const sampleData = {
+                doc_001: {
+                    id: 'doc_001',
+                    vector: '[0.1234, 0.5678, 0.9012, 0.3456, 0.7890, 0.2345, 0.6789, 0.0123, 0.4567, 0.8901, 0.2345, 0.6789, 0.0123, 0.4567, 0.8901, 0.1234, 0.5678, 0.9012, 0.3456, 0.7890]',
+                    content: 'Spring AI는 AI 애플리케이션 개발을 위한 강력한 프레임워크입니다.\n\nSpring AI는 다양한 AI 모델과의 통합을 쉽게 만들어주며, 벡터 데이터베이스와의 연동도 지원합니다.\n\n주요 기능:\n- ChatGPT, Claude 등 다양한 LLM 지원\n- 벡터 임베딩 및 검색\n- 프롬프트 템플릿\n- 출력 파서',
+                    metadata: '{\n  "source": "manual",\n  "type": "tutorial",\n  "version": "1.0.0",\n  "created_at": "2024-01-15",\n  "author": "Spring AI Team",\n  "tags": ["spring", "ai", "framework"]\n}'
+                },
+                doc_002: {
+                    id: 'doc_002',
+                    vector: '[0.2468, 0.1357, 0.8024, 0.5791, 0.3680, 0.9135, 0.0246, 0.7913, 0.4680, 0.1357, 0.8024, 0.5791, 0.3680, 0.9135, 0.0246, 0.7913, 0.4680, 0.2468, 0.1357, 0.8024]',
+                    content: 'Vector Database는 고차원 벡터 데이터를 효율적으로 저장하고 검색하는 데이터베이스입니다.\n\n벡터 데이터베이스는 임베딩된 데이터의 유사성 검색에 최적화되어 있으며, AI 애플리케이션에서 중요한 역할을 합니다.\n\n지원하는 Vector DB:\n- PGVector\n- Pinecone\n- Weaviate\n- Qdrant\n- Milvus',
+                    metadata: '{\n  "source": "documentation",\n  "type": "reference",\n  "version": "2.0.0",\n  "created_at": "2024-01-20",\n  "category": "database",\n  "tags": ["vector", "database", "embedding"]\n}'
+                }
+            };
+
+            const docData = sampleData[docId];
+            if (docData) {
+                showDocumentModal(docData);
+            }
+        });
+
+        // 테이블 행 클릭시에도 상세보기
+        $(document).on('click', '#documentsTableBody tr', function() {
+            const $viewBtn = $(this).find('.view-doc-btn');
+            if ($viewBtn.length) {
+                $viewBtn.click();
+            }
+        });
+
+        // 모달 닫기
+        $("#closeModal, #documentModal").on("click", function(e) {
+            if (e.target === this || $(this).attr('id') === 'closeModal') {
+                closeDocumentModal();
+            }
+        });
+
+        // ESC 키로 모달 닫기
+        $(document).on('keyup', function(e) {
+            if (e.key === 'Escape') {
+                closeDocumentModal();
+            }
+        });
+
+        // 초기 로드 (실제로는 Embedding 탭 활성화시 호출)
+        // loadDocuments();
+    });
+</script>
+
+</body>
+</html>
