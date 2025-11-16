@@ -9,7 +9,9 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 프롬프트 기본 가이드라인
@@ -22,6 +24,8 @@ import java.util.List;
  * 프롬프트 기법
  * 1. 제로-샷 프롬프트 : 예시, 추가 정보 제공 없이 단일 프롬프트로 작업 수행 가능한 경우 사용 (번역, 분류 등)
  * 2. 퓨-샷 프롬프트 : 몇가지 예시를 제공하여 LLM 이 원하는 답변 스타일이나 형식을 이해하도록 돕는 기법
+ * 3. 스텝-백 프롬프트 : 복잡한 문제를 단계별로 나누어 해결하는 기법. 문제를 작은 하위 문제로 분해하여 각 단계를 순차적으로 해결
+ * 4. Chain-Of-Thought 프롬프트 (COT) : LLM 이 문제 해결 과정을 단계별로 설명하도록 유도하는 기법. 답변 전에 사고 과정을 서술하도록 요청
  */
 @Service
 public class PromptService {
@@ -125,6 +129,46 @@ public class PromptService {
                         """.formatted(question, context))
                 .call()
                 .content();
+    }
+
+    public String chainOfThoughtPrompt(String question) {
+        return chatClient.prompt()
+                .user("""
+                        질문: %s
+                        한 걸음씩 생각해 봅시다.
+                        
+                        [예시]
+                        질문: 제 동생이 2살일 때, 저는 그의 나이의 두 배였어요.
+                        지금 저는 40살인데, 제 동생은 몇 살일까요? 한 걸음씩 생각해봅시다.
+                        
+                        답변: 제 동생이 2살일 때, 저는 2 x 2 = 4살이었어요.
+                        그럼 제가 동생보다 2살 나이가 많습니다.
+                        지금 저는 40살이니까, 제 동생은 40 - 2 = 38살입니다.
+                        """.formatted(question))
+                .call()
+                .content();
+    }
+
+    public String selfConsistency(String content) {
+        String selfConsistencyPrompt = """
+                다음 내용을 [IMPORTANT, NOT IMPORTANT] 중 하나로 분류하세요.
+                추가 설명은 포함하지 마시오.
+                
+                질문: %s
+                """.formatted(content);
+        Map<String, Integer> counts = new HashMap<>();
+        counts.put("IMPORTANT", 0);
+        counts.put("NOT IMPORTANT", 0);
+        for (int i = 0; i < 5; i++) {
+            String important = chatClient.prompt()
+                    .user(selfConsistencyPrompt)
+                    .call()
+                    .content();
+            if (counts.containsKey(important)) {
+                counts.put(important, counts.get(important) + 1);
+            }
+        }
+        return counts.get("IMPORTANT") >= counts.get("NOT IMPORTANT") ? "IMPORTANT" : "NOT IMPORTANT";
     }
 
 }

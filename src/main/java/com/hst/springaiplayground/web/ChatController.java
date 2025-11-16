@@ -63,4 +63,14 @@ public class ChatController {
         return promptService.stepBackPrompt(question);
     }
 
+    @GetMapping(path = "/chain-of-thought")
+    public String chainOfThoughtTest(@RequestParam String question) {
+        return promptService.chainOfThoughtPrompt(question);
+    }
+
+    @GetMapping(path = "/self-consistency")
+    public String self(@RequestParam String content) {
+        return promptService.selfConsistency(content);
+    }
+
 }
