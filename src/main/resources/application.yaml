@@ -1,6 +1,13 @@
 spring:
   application:
     name: spring-ai-playground
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+          no-store: true
+          must-revalidate: true
   ai:
     openai:
       api-key: ${OPENAI_API_KEY:}
