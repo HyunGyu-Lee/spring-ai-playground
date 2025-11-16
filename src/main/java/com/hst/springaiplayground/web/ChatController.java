@@ -1,5 +1,7 @@
-package com.hst.springaiplayground.web.chatapi;
+package com.hst.springaiplayground.web;
 
+import com.hst.springaiplayground.service.chatapi.ChatService;
+import com.hst.springaiplayground.service.prompt.PromptService;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,10 +19,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatController {
     private final Map<String, List<Message>> chatMemories;
     private final ChatService chatService;
+    private final PromptService promptService;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, PromptService promptService) {
         this.chatMemories = new ConcurrentHashMap<>();
         this.chatService = chatService;
+        this.promptService = promptService;
     }
 
     @GetMapping
@@ -42,6 +46,21 @@ public class ChatController {
     public String memorizedChat(@RequestParam String uid, @RequestParam String userMessage) {
         chatMemories.computeIfAbsent(uid, key -> new ArrayList<>());
         return chatService.memorizedChat(userMessage, chatMemories.computeIfAbsent(uid, key -> new ArrayList<>()));
+    }
+
+    @GetMapping(path = "/review-classification")
+    public String reviewClassification(@RequestParam String review) {
+        return promptService.zeroShotExample(review);
+    }
+
+    @GetMapping(path = "/order-to-json")
+    public String orderToJson(@RequestParam String orderDetail) {
+        return promptService.fewShotExample(orderDetail);
+    }
+
+    @GetMapping(path = "/step-back")
+    public String stepBackTest(@RequestParam String question) {
+        return promptService.stepBackPrompt(question);
     }
 
 }

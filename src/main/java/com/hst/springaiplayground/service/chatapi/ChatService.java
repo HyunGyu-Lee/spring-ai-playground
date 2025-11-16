@@ -1,4 +1,4 @@
-package com.hst.springaiplayground.web.chatapi;
+package com.hst.springaiplayground.service.chatapi;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
