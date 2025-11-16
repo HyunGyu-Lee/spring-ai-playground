@@ -1,11 +1,15 @@
 package com.hst.springaiplayground.web.chatapi;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -48,5 +52,18 @@ public class ChatService {
                     """)
                 .call()
                 .content();
+    }
+
+    public String memorizedChat(String userMessage, List<Message> messages) {
+        ChatResponse response = chatClient.prompt()
+                .messages(messages) // 이전 대화 내용 추가
+                .user(userMessage)
+                .call()
+                .chatResponse();
+
+        messages.add(UserMessage.builder().text(userMessage).build());
+        messages.add(response.getResult().getOutput());
+
+        return response.getResult().getOutput().getText();
     }
 }
