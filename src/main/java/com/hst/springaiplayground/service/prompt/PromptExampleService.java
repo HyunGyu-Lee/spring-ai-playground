@@ -28,13 +28,13 @@ import java.util.Map;
  * 4. Chain-Of-Thought 프롬프트 (COT) : LLM 이 문제 해결 과정을 단계별로 설명하도록 유도하는 기법. 답변 전에 사고 과정을 서술하도록 요청
  */
 @Service
-public class PromptService {
+public class PromptExampleService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final ChatClient chatClient;
     private final PromptTemplate zeroShotPromptTemplate;
 
-    public PromptService(ChatClient.Builder builder) {
+    public PromptExampleService(ChatClient.Builder builder) {
         this.chatClient = builder
                 .defaultOptions(ChatOptions.builder()
                         .temperature(0.0) // 창의성이 필요한 작업이 아니므로 0 설정 (셋 중 하나만 답변)

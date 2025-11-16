@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spring AI Test</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-100">
+<div class="min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 space-y-6">
+        <h1 class="text-2xl font-bold text-slate-800">
+            Spring AI Test
+        </h1>
+
+        <!-- API Type -->
+        <div class="space-y-2">
+            <span class="block text-sm font-medium text-slate-700">
+                API
+            </span>
+            <div class="flex flex-wrap gap-4">
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                            type="radio"
+                            name="apiType"
+                            id="apiChat"
+                            value="/chat"
+                            class="h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                            checked
+                    >
+                    <span>Chat API</span>
+                </label>
+
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                            type="radio"
+                            name="apiType"
+                            id="apiPrompt"
+                            value="/prompt"
+                            class="h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    >
+                    <span>Prompt API</span>
+                </label>
+
+                <label class="inline-flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                            type="radio"
+                            name="apiType"
+                            id="apiStructured"
+                            value="/structured-output"
+                            class="h-4 w-4 text-blue-600 border-slate-300 focus:ring-blue-500"
+                    >
+                    <span>StructuredOutput API</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Endpoint -->
+        <div class="space-y-2">
+            <label for="endpointInput" class="block text-sm font-medium text-slate-700">
+                Endpoint
+            </label>
+            <input
+                    type="text"
+                    id="endpointInput"
+                    value="/chat"
+                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="예: /chat"
+            >
+        </div>
+
+        <!-- Question + Button -->
+        <div class="space-y-2">
+            <label for="questionInput" class="block text-sm font-medium text-slate-700">
+                Question
+            </label>
+            <div class="flex gap-2">
+                <input
+                        type="text"
+                        id="questionInput"
+                        class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="질문을 입력하세요"
+                >
+                <button
+                        id="sendButton"
+                        type="button"
+                        class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:bg-blue-300"
+                >
+                    전송
+                </button>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div class="space-y-2">
+            <label for="resultArea" class="block text-sm font-medium text-slate-700">
+                Result
+            </label>
+            <textarea
+                    id="resultArea"
+                    rows="14"
+                    class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    readonly
+            ></textarea>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery CDN -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- App JS -->
+<script src="app.js"></script>
+</body>
+</html>
