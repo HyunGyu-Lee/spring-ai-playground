@@ -1,9 +1,12 @@
 package com.hst.springaiplayground.service.structuredoutput;
 
+import com.hst.springaiplayground.service.structuredoutput.model.HotelInfo;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -56,4 +59,30 @@ public class StructuredOutputExampleService {
                 .entity(new ListOutputConverter());
     }
 
+    /**
+     * BeanOutputConverter 저수준 API
+     */
+    public HotelInfo beanOutputLowLevel(String city) {
+        BeanOutputConverter<HotelInfo> converter = new BeanOutputConverter<>(HotelInfo.class);
+        PromptTemplate promptTemplate = PromptTemplate.builder()
+                .template("{city}에서 유명한 호텔 목록 5개를 출력하세요. {format}")
+                .build();
+
+        Prompt prompt = promptTemplate.create(
+                Map.of("city", city, "format", converter.getFormat())
+        );
+
+        String response = chatClient.prompt(prompt).call().content();
+        return converter.convert(response);
+    }
+
+    /**
+     * BeanOutputConverter 고수준 API
+     */
+    public List<HotelInfo> beanOutputHighLevel(String city) {
+        return chatClient.prompt()
+                .user("각 도시별로 유명한 호텔 목록 5개를 출력하세요. 도시: %s".formatted(city))
+                .call()
+                .entity(new BeanOutputConverter<>(new ParameterizedTypeReference<>() {}));
+    }
 }

@@ -39,15 +39,17 @@ $(function () {
                 question: question   // → /endpoint?question=xxxx 형태로 전송됨
             }
         })
-        .done((data) => $resultArea.val(data))
+        .done((data) => {
+            $resultArea.val(data);
+            setLoading(false);
+        })
         .fail((jqXHR, textStatus, errorThrown) => {
             let msg = '요청 중 오류가 발생했습니다.\n\n';
             msg += 'Status: ' + (jqXHR.status || 'N/A') + ' ' + (jqXHR.statusText || '') + '\n';
             msg += 'Error: ' + (errorThrown || textStatus);
             $resultArea.val(msg);
-        }).finally(() => {
-            setLoading(true);
-        });
+            setLoading(false);
+        })
     }
 
     $sendButton.on('click', () => {
