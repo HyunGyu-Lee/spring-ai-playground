@@ -1,11 +1,13 @@
 package com.hst.springaiplayground.service.structuredoutput;
 
 import com.hst.springaiplayground.service.structuredoutput.model.HotelInfo;
+import com.hst.springaiplayground.service.structuredoutput.model.ReviewClassification;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
+import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 
@@ -85,4 +87,39 @@ public class StructuredOutputExampleService {
                 .call()
                 .entity(new BeanOutputConverter<>(new ParameterizedTypeReference<>() {}));
     }
+
+    /**
+     * MapOutputConverter 저수준 API
+     */
+    public Map<String, Object> mapOutputLowLevel(String hotel) {
+        MapOutputConverter converter = new MapOutputConverter();
+        PromptTemplate promptTemplate = PromptTemplate.builder()
+                .template("호텔 {hotel}에 대한 정보를 알려주세요. {format}")
+                .build();
+
+        Prompt prompt = promptTemplate.create(Map.of("hotel", hotel, "format", converter.getFormat()));
+        String response = chatClient.prompt(prompt).call().content();
+        return converter.convert(response);
+    }
+
+    /**
+     * MapOutputConverter 고수준 API
+     */
+    public Map<String, Object> mapOutputHighLevel(String hotel) {
+        return chatClient.prompt()
+                .user("호텔 %s에 대한 정보를 알려주세요.".formatted(hotel))
+                .call()
+                .entity(new MapOutputConverter());
+    }
+
+    public ReviewClassification reviewClassification(String review) {
+        return chatClient.prompt()
+                .system("""
+                        다음 리뷰를 [POSITIVE, NEGATIVE, NEUTRAL] 중 하나로 분류하고 지정한 포맷에 맞게 응답하시오.
+                        """)
+                .user(review)
+                .call()
+                .entity(ReviewClassification.class);
+    }
+
 }
